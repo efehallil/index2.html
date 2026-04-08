@@ -2,198 +2,282 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lock Master: Fix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Minnoş Meyve Kavanozu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;900&display=swap');
-        body { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Inter', sans-serif; user-select: none; touch-action: none; }
-        canvas { display: block; }
-        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 50; }
-        #remaining { font-size: 130px; font-weight: 900; color: #000; opacity: 0.08; transition: transform 0.15s; }
-        #top-bar { position: absolute; top: 8%; width: 100%; text-align: center; }
-        #best-container { position: absolute; bottom: 8%; text-align: center; }
-        .label { font-size: 10px; letter-spacing: 4px; color: #000; opacity: 0.4; text-transform: uppercase; }
-        .val { font-size: 18px; font-weight: 900; color: #000; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 100; flex-direction: column; }
-        h1 { font-weight: 300; font-size: 45px; letter-spacing: 12px; margin-bottom: 40px; color: #000; }
-        button { background: #000; border: none; color: #fff; padding: 20px 60px; border-radius: 100px; font-weight: 900; letter-spacing: 2px; font-size: 16px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        :root {
+            --sky-blue: #b3e5fc; /* Açık gökyüzü mavisi */
+            --glass-bg: rgba(255, 255, 255, 0.25); /* Şeffaf cam arka planı */
+            --glass-border: rgba(255, 255, 255, 0.5); /* Cam kenarlığı */
+        }
+
+        body { 
+            margin: 0; padding: 0; 
+            background-color: #333; /* Dış arka plan koyu */
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden;
+            font-family: 'Fredoka One', cursive; /* Sevimli yazı tipi */
+        }
+
+        /* Tüm Ekran Arka Planı (Gökyüzü) */
+        #viewport {
+            position: relative;
+            width: 100%; height: 100%;
+            max-width: 450px; /* PC'de çok büyümesin */
+            max-height: 850px;
+            background: linear-gradient(to bottom, #81d4fa, #e1f5fe);
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+            border: 8px solid #4e342e; /* Dış ahşap çerçeve */
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        }
+
+        /* Hareketli Bulutlar (Kavanozun arkasında süzülürler) */
+        .cloud {
+            position: absolute; background: white; border-radius: 50px; opacity: 0.8; z-index: 1;
+            animation: float 20s infinite linear;
+        }
+        .c1 { width: 120px; height: 40px; top: 10%; left: -150px; }
+        .c2 { width: 150px; height: 50px; top: 40%; left: -200px; animation-duration: 30s; opacity: 0.5; }
+        .c3 { width: 100px; height: 30px; top: 70%; left: -100px; animation-duration: 25s; }
+
+        @keyframes float {
+            from { left: -200px; }
+            to { left: 500px; }
+        }
+
+        /* Bardak / Kavanoz Görünümü (Meyvelerin düştüğü kap) */
+        #glass-container {
+            position: relative;
+            width: 85%; height: 75%;
+            background: var(--glass-bg);
+            border: 4px solid var(--glass-border);
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            backdrop-filter: blur(5px); /* Cam efekti */
+            z-index: 2; /* Bulutların önünde */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1), inset 0 0 20px rgba(255,255,255,0.4);
+            overflow: hidden; /* Meyvelerin dışarı çıkmasını engelle */
+        }
+
+        /* Skor ve Next Kutusu (Arayüz) */
+        #score-board { 
+            position: absolute; top: 30px; left: 30px; 
+            font-size: 36px; color: #0277bd; z-index: 10;
+            background: rgba(255,255,255,0.6); padding: 5px 15px; border-radius: 10px;
+        }
+
+        #next-box {
+            position: absolute; top: 30px; right: 30px;
+            background: rgba(255,255,255,0.6); padding: 10px; border-radius: 20px;
+            text-align: center; z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Fizik Motorunun Çizim Alanı */
+        canvas { 
+            position: absolute; top: 0; left: 0; z-index: 5; 
+            pointer-events: none; /* Tıklamaları algılamasın, dokunma katmanı halledecek */
+        }
+        
+        /* Tıklama Katmanı (Meyveyi bırakmak için bardağın üstü dahil her yer) */
+        #touch-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 15; /* En ön katman */
+            cursor: crosshair;
+        }
+
+        /* Game Over Paneli */
+        #game-over { 
+            display: none; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); background: white; 
+            padding: 30px; border-radius: 30px; text-align: center; 
+            z-index: 100; /* En, en ön katman */
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4); width: 220px;
+            border: 5px solid #ff7043;
+        }
+        button { 
+            background: #ff7043; border: none; padding: 15px; color: white; 
+            border-radius: 15px; cursor: pointer; font-family: 'Fredoka One';
+            width: 100%; font-size: 20px; margin-top: 10px;
+            box-shadow: 0 4px 0 #b33939; transition: all 0.1s;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #b33939; }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+<div id="viewport">
+    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
 
-<div id="hud">
-    <div id="top-bar"><div class="label">STAGE</div><div id="ui-lvl" class="val">01</div></div>
-    <div id="remaining">1</div>
-    <div id="best-container"><div class="label">PERSONAL BEST</div><div id="ui-best" class="val">01</div></div>
+    <div id="score-board">0</div>
+    
+    <div id="next-box">
+        <div style="font-size: 12px; color: #555;">SIRADAKİ</div>
+        <div id="next-emoji" style="font-size: 32px;">🍒</div>
+    </div>
+
+    <div id="glass-container"></div>
+    
+    <div id="touch-layer"></div>
+
+    <div id="game-over">
+        <h1 style="color:#f44336; margin:0; font-size:40px;">UPS! 🍎</h1>
+        <p id="final-score" style="font-size:1.2rem;"></p>
+        <button onclick="location.reload()">TEKRAR DENE</button>
+    </div>
 </div>
 
-<div id="menu" class="overlay">
-    <h1 id="title">LOCK</h1>
-    <button id="startBtn">ENGAGE</button>
-</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 
 <script>
-const game = {
-    level: 1, best: 1, clicks: 1, angle: 0, dir: 1,
-    target: { a: 0, w: 0.6 }, particles: [], state: 'MENU', pulse: 0, audioCtx: null,
-    themes: [
-        { bg: '#ffffff', acc: '#FFD700' }, { bg: '#f0faff', acc: '#007AFF' },
-        { bg: '#fff0f0', acc: '#FF3B30' }, { bg: '#f0fff0', acc: '#34C759' },
-        { bg: '#f5f0ff', acc: '#5856D6' }
-    ],
+    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
 
-    init() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.resize();
-        window.onresize = () => this.resize();
-        this.level = parseInt(localStorage.getItem('kilit_lvl')) || 1;
-        this.best = parseInt(localStorage.getItem('kilit_best')) || 1;
-        this.updateUI();
-        
-        // Buton tıklama olayını buraya aldım (Daha güvenli)
-        document.getElementById('startBtn').addEventListener('click', () => this.start());
-        document.getElementById('startBtn').addEventListener('touchstart', (e) => { e.preventDefault(); this.start(); });
+    const engine = Engine.create();
+    const glass = document.getElementById('glass-container');
+    const touchLayer = document.getElementById('touch-layer');
+    
+    // Kavanozun iç boyutlarını alalım
+    const cw = glass.clientWidth;
+    const ch = glass.clientHeight;
 
-        this.loop();
-    },
+    // Render'ı kavanozun içine hapsediyoruz
+    const render = Render.create({
+        element: glass,
+        engine: engine,
+        options: { width: cw, height: ch, wireframes: false, background: 'transparent' }
+    });
 
-    resize() {
-        this.width = this.canvas.width = window.innerWidth;
-        this.height = this.canvas.height = window.innerHeight;
-        this.radius = Math.min(this.width, this.height) * 0.35;
-    },
+    // Kavanoz Fiziği (Kavanoz içindeki koordinatlar 0,0'dan başlar)
+    const thick = 40; // Duvar kalınlığı
+    const ground = Bodies.rectangle(cw/2, ch + thick/2 - 5, cw, thick, { isStatic: true, render: { visible: false } }); // Ahşap zemin
+    const leftWall = Bodies.rectangle(-thick/2 + 5, ch/2, thick, ch, { isStatic: true, render: { visible: false } }); // Sol cam duvar
+    const rightWall = Bodies.rectangle(cw + thick/2 - 5, ch/2, thick, ch, { isStatic: true, render: { visible: false } }); // Sağ cam duvar
+    const deadLine = ch * 0.15; // Yanma çizgisi
 
-    beep(freq, duration) {
-        if(!this.audioCtx) return;
-        try {
-            const osc = this.audioCtx.createOscillator();
-            const gain = this.audioCtx.createGain();
-            osc.connect(gain); gain.connect(this.audioCtx.destination);
-            osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
-            osc.start(); osc.stop(this.audioCtx.currentTime + duration);
-        } catch(e) {}
-    },
+    Composite.add(engine.world, [ground, leftWall, rightWall]);
 
-    start() {
-        // Ses motorunu ilk dokunuşta canlandır (Kritik nokta)
-        if (!this.audioCtx) {
-            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume();
-        }
+    // Minnoş Meyve Listesi (Pastel Renkler ve İsimler)
+    const FRUITS = [
+        { r: cw*0.06, color: '#ff8a80', name: 'KİRAZ', score: 2, emoji: '🍒' },
+        { r: cw*0.09, color: '#ba68c8', name: 'ÇİLEK', score: 4, emoji: '🍓' },
+        { r: cw*0.13, color: '#81c784', name: 'ÜZÜM', score: 6, emoji: '🍇' },
+        { r: cw*0.17, color: '#fff176', name: 'PORTAKAL', score: 10, emoji: '🍊', t: '#4e342e' },
+        { r: cw*0.22, color: '#ffb74d', name: 'ELMA', score: 15, emoji: '🍎' },
+        { r: cw*0.28, color: '#e57373', name: 'ARMUT', score: 25, emoji: '🍐' },
+        { r: cw*0.35, color: '#64b5f6', name: 'ANANAS', score: 40, emoji: '🍍' },
+        { r: cw*0.42, color: '#81d4fa', name: 'KARPUZ', score: 60, emoji: '🍉' }
+    ];
 
-        this.clicks = this.level;
-        this.state = 'PLAY';
-        document.getElementById('menu').style.display = 'none';
-        this.setTarget();
-        this.updateUI();
-    },
+    let score = 0;
+    let nextLevel = 0; // Sıradaki meyvenin seviyesi
+    let isGameOver = false;
+    let canSpawn = true; // Spam filtresi
 
-    setTarget() {
-        const gap = 1.6 + Math.random() * 2.4;
-        this.target.a = (this.angle + (this.dir * gap)) % 6.28;
-        this.target.w = Math.max(0.25, 0.6 - (this.level * 0.005));
-    },
-
-    updateUI() {
-        document.getElementById('ui-lvl').innerText = (this.level < 10 ? "0"+this.level : this.level);
-        document.getElementById('ui-best').innerText = (this.best < 10 ? "0"+this.best : this.best);
-        document.getElementById('remaining').innerText = this.clicks;
-        const theme = this.themes[(this.level - 1) % this.themes.length];
-        document.body.style.backgroundColor = theme.bg;
-    },
-
-    check() {
-        if(this.state !== 'PLAY') return;
-        const nA = (this.angle % 6.28 + 6.28) % 6.28;
-        let s = (this.target.a % 6.28 + 6.28) % 6.28;
-        let e = (s + this.target.w) % 6.28;
-        let hit = (s < e) ? (nA >= s && nA <= e) : (nA >= s || nA <= e);
-
-        if(hit) {
-            this.beep(440, 0.1);
-            if(navigator.vibrate) navigator.vibrate(15);
-            this.spawnParticles();
-            this.pulse = 10;
-            this.clicks--;
-            if(this.clicks <= 0) {
-                this.level++;
-                this.clicks = this.level;
-                if(this.level > this.best) {
-                    this.best = this.level;
-                    localStorage.setItem('kilit_best', this.best);
-                }
-                localStorage.setItem('kilit_lvl', this.level);
-                if(navigator.vibrate) navigator.vibrate([30, 30, 30]);
-            }
-            this.dir *= -1;
-            this.setTarget();
-            this.updateUI();
-        } else {
-            this.beep(150, 0.3);
-            if(navigator.vibrate) navigator.vibrate(100);
-            this.state = 'MENU';
-            document.getElementById('menu').style.display = 'flex';
-            document.getElementById('title').innerText = "FAILED";
-        }
-    },
-
-    spawnParticles() {
-        const px = (this.width/2) + Math.cos(this.angle) * this.radius;
-        const py = (this.height/2) + Math.sin(this.angle) * this.radius;
-        const theme = this.themes[(this.level - 1) % this.themes.length];
-        for(let i=0; i<8; i++) {
-            this.particles.push({ x: px, y: py, vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6, l: 1.0, c: theme.acc });
-        }
-    },
-
-    loop() {
-        const cx = this.width / 2, cy = this.height / 2;
-        const theme = this.themes[(this.level - 1) % this.themes.length];
-        this.ctx.clearRect(0, 0, this.width, this.height);
-        let curR = this.radius + (this.pulse * 0.5);
-        if(this.pulse > 0) this.pulse -= 1;
-
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, curR, 0, 6.28);
-        this.ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-        this.ctx.lineWidth = 3;
-        this.ctx.stroke();
-
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, curR, this.target.a, this.target.a + this.target.w);
-        this.ctx.strokeStyle = theme.acc;
-        this.ctx.lineWidth = 7;
-        this.ctx.lineCap = 'round';
-        this.ctx.stroke();
-
-        this.particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.l -= 0.04;
-            this.ctx.fillStyle = p.c; this.ctx.globalAlpha = p.l;
-            this.ctx.fillRect(p.x, p.y, 2, 2);
-            if(p.l <= 0) this.particles.splice(i, 1);
+    function createFruit(x, y, level) {
+        const f = FRUITS[level];
+        return Bodies.circle(x, y, f.r, {
+            label: 'fruit_'+level, restitution: 0.25, friction: 0.1,
+            plugin: { level: level, born: Date.now() },
+            render: { fillStyle: f.color, strokeStyle: 'rgba(0,0,0,0.1)', lineWidth: 2 }
         });
-        this.ctx.globalAlpha = 1;
-
-        if(this.state === 'PLAY') this.angle += (0.035 + (this.level * 0.0002)) * this.dir;
-        const dotX = cx + Math.cos(this.angle) * curR, dotY = cy + Math.sin(this.angle) * curR;
-        this.ctx.beginPath();
-        this.ctx.arc(dotX, dotY, 5, 0, 6.28);
-        this.ctx.fillStyle = '#000'; this.ctx.fill();
-
-        requestAnimationFrame(() => this.loop());
     }
-};
 
-window.onload = () => game.init();
-window.addEventListener('touchstart', (e) => { if(game.state === 'PLAY') { e.preventDefault(); game.check(); } }, {passive:false});
-window.addEventListener('mousedown', (e) => { if(game.state === 'PLAY') game.check(); });
+    // Tıklama ile Meyve Atma
+    touchLayer.addEventListener('pointerdown', (e) => {
+        if (isGameOver || !canSpawn) return;
+        const rect = glass.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        
+        // Kavanozun dışına tıklarsa atmasın
+        if (x < 0 || x > cw) return; 
+        
+        // Meyvenin duvarın içine doğmasını engelle
+        const maxR = FRUITS[nextLevel].r + 15;
+        x = Math.max(maxR, Math.min(x, cw - maxR));
+
+        // Meyveyi kavanozun içine at
+        const fruit = createFruit(x, deadLine - 30, nextLevel);
+        Composite.add(engine.world, fruit);
+        
+        // Sıradakini belirle ve güncelle
+        nextLevel = Math.floor(Math.random() * 3);
+        document.getElementById('next-emoji').innerText = FRUITS[nextLevel].emoji;
+        
+        canSpawn = false;
+        setTimeout(() => canSpawn = true, 550); // Spam filtresi
+    });
+
+    // Meyve Birleşme Mantığı
+    Events.on(engine, 'collisionStart', (event) => {
+        event.pairs.forEach(pair => {
+            const { bodyA, bodyB } = pair;
+            if (bodyA.label === bodyB.label && bodyA.label.startsWith('fruit_')) {
+                const lvl = bodyA.plugin.level;
+                if (lvl < FRUITS.length - 1) {
+                    const nx = (bodyA.position.x + bodyB.position.x) / 2;
+                    const ny = (bodyA.position.y + bodyB.position.y) / 2;
+                    
+                    // Eski meyveleri sil
+                    Composite.remove(engine.world, [bodyA, bodyB]);
+                    
+                    // Yeni meyveyi bir boy büyük oluştur
+                    const nextFruit = createFruit(nx, ny, lvl + 1);
+                    Composite.add(engine.world, nextFruit);
+                    
+                    // Puanı artır ve UI güncelle
+                    score += FRUITS[lvl].score;
+                    document.getElementById('score-board').innerText = score;
+                }
+            }
+        });
+    });
+
+    // Meyve İsimleri Çizimi ve Game Over Kontrolü
+    Events.on(render, 'afterRender', () => {
+        const ctx = render.context;
+        const bodies = Composite.allBodies(engine.world);
+        const now = Date.now();
+
+        bodies.forEach(body => {
+            if (body.label.startsWith('fruit_')) {
+                const lvl = body.plugin.level;
+                const data = FRUITS[lvl];
+                
+                ctx.save();
+                ctx.translate(body.position.x, body.position.y);
+                ctx.rotate(body.angle);
+                
+                // Meyvenin İsmini Yaz
+                ctx.fillStyle = data.t || "white";
+                ctx.font = `bold ${data.r * 0.4}px 'Fredoka One'`; // Sevimli yazı tipi
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Yazının altına hafif gölge
+                ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
+                ctx.fillText(data.name, 0, 3);
+                
+                ctx.restore();
+
+                // Yanma Kontrolü (Daha esnek)
+                if (!isGameOver && body.position.y < deadLine && now - body.plugin.born > 2500 && Math.abs(body.velocity.y) < 0.15) {
+                    isGameOver = true;
+                    document.getElementById('game-over').style.display = 'block';
+                    document.getElementById('final-score').innerText = "Toplam Skor: " + score;
+                }
+            }
+        });
+
+        // Yanma Çizgisi (Daha yumuşak)
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath(); ctx.moveTo(0, deadLine); ctx.lineTo(cw, deadLine);
+        ctx.strokeStyle = "rgba(233, 30, 99, 0.4)"; ctx.lineWidth = 3; ctx.stroke();
+        ctx.setLineDash([]);
+    });
+
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
 </script>
 </body>
 </html>
