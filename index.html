@@ -3,281 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Minnoş Meyve Kavanozu</title>
+    <title>Suika Combo King - Ultra Clear</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --sky-blue: #b3e5fc; /* Açık gökyüzü mavisi */
-            --glass-bg: rgba(255, 255, 255, 0.25); /* Şeffaf cam arka planı */
-            --glass-border: rgba(255, 255, 255, 0.5); /* Cam kenarlığı */
-        }
-
-        body { 
-            margin: 0; padding: 0; 
-            background-color: #333; /* Dış arka plan koyu */
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden;
-            font-family: 'Fredoka One', cursive; /* Sevimli yazı tipi */
-        }
-
-        /* Tüm Ekran Arka Planı (Gökyüzü) */
-        #viewport {
-            position: relative;
-            width: 100%; height: 100%;
-            max-width: 450px; /* PC'de çok büyümesin */
-            max-height: 850px;
-            background: linear-gradient(to bottom, #81d4fa, #e1f5fe);
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
-            border: 8px solid #4e342e; /* Dış ahşap çerçeve */
-            border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-        }
-
-        /* Hareketli Bulutlar (Kavanozun arkasında süzülürler) */
-        .cloud {
-            position: absolute; background: white; border-radius: 50px; opacity: 0.8; z-index: 1;
-            animation: float 20s infinite linear;
-        }
-        .c1 { width: 120px; height: 40px; top: 10%; left: -150px; }
-        .c2 { width: 150px; height: 50px; top: 40%; left: -200px; animation-duration: 30s; opacity: 0.5; }
-        .c3 { width: 100px; height: 30px; top: 70%; left: -100px; animation-duration: 25s; }
-
-        @keyframes float {
-            from { left: -200px; }
-            to { left: 500px; }
-        }
-
-        /* Bardak / Kavanoz Görünümü (Meyvelerin düştüğü kap) */
-        #glass-container {
-            position: relative;
-            width: 85%; height: 75%;
-            background: var(--glass-bg);
-            border: 4px solid var(--glass-border);
-            border-bottom-left-radius: 40px;
-            border-bottom-right-radius: 40px;
-            backdrop-filter: blur(5px); /* Cam efekti */
-            z-index: 2; /* Bulutların önünde */
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1), inset 0 0 20px rgba(255,255,255,0.4);
-            overflow: hidden; /* Meyvelerin dışarı çıkmasını engelle */
-        }
-
-        /* Skor ve Next Kutusu (Arayüz) */
+        body { margin: 0; padding: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Fredoka One', cursive; }
+        #viewport { position: relative; width: 100%; height: 100%; max-width: 400px; max-height: 800px; background: #81d4fa; overflow: hidden; border-radius: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        #glass-container { position: relative; width: 85%; height: 72%; background: rgba(255, 255, 255, 0.2); border: 3px solid rgba(255, 255, 255, 0.4); border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; margin: 18% auto 0; z-index: 2; }
+        
         #score-board { 
-            position: absolute; top: 30px; left: 30px; 
-            font-size: 36px; color: #0277bd; z-index: 10;
-            background: rgba(255,255,255,0.6); padding: 5px 15px; border-radius: 10px;
-        }
-
-        #next-box {
-            position: absolute; top: 30px; right: 30px;
-            background: rgba(255,255,255,0.6); padding: 10px; border-radius: 20px;
-            text-align: center; z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        /* Fizik Motorunun Çizim Alanı */
-        canvas { 
-            position: absolute; top: 0; left: 0; z-index: 5; 
-            pointer-events: none; /* Tıklamaları algılamasın, dokunma katmanı halledecek */
+            position: absolute; top: 20px; left: 20px; 
+            font-size: 32px; color: #fff; z-index: 10; 
+            text-shadow: 3px 3px 0px #0277bd; 
+            background: rgba(0,0,0,0.1); padding: 5px 15px; border-radius: 50px; 
         }
         
-        /* Tıklama Katmanı (Meyveyi bırakmak için bardağın üstü dahil her yer) */
-        #touch-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 15; /* En ön katman */
-            cursor: crosshair;
-        }
-
-        /* Game Over Paneli */
-        #game-over { 
-            display: none; position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); background: white; 
-            padding: 30px; border-radius: 30px; text-align: center; 
-            z-index: 100; /* En, en ön katman */
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4); width: 220px;
-            border: 5px solid #ff7043;
-        }
-        button { 
-            background: #ff7043; border: none; padding: 15px; color: white; 
-            border-radius: 15px; cursor: pointer; font-family: 'Fredoka One';
-            width: 100%; font-size: 20px; margin-top: 10px;
-            box-shadow: 0 4px 0 #b33939; transition: all 0.1s;
-        }
-        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #b33939; }
+        #next-box { position: absolute; top: 20px; right: 20px; background: #fff; padding: 8px; border-radius: 15px; text-align: center; z-index: 10; border: 2px solid #0277bd; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
+        #touch-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 15; }
+        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 25px; text-align: center; z-index: 100; width: 220px; }
+        button { background: #ff7043; border: none; padding: 15px; color: white; border-radius: 12px; cursor: pointer; font-family: 'Fredoka One'; width: 100%; font-size: 20px; box-shadow: 0 5px 0 #b33939; }
     </style>
 </head>
 <body>
 
 <div id="viewport">
-    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
-
     <div id="score-board">0</div>
-    
-    <div id="next-box">
-        <div style="font-size: 12px; color: #555;">SIRADAKİ</div>
-        <div id="next-emoji" style="font-size: 32px;">🍒</div>
-    </div>
-
+    <div id="next-box"><div id="next-emoji" style="font-size: 30px;">🍒</div></div>
     <div id="glass-container"></div>
-    
     <div id="touch-layer"></div>
-
     <div id="game-over">
-        <h1 style="color:#f44336; margin:0; font-size:40px;">UPS! 🍎</h1>
-        <p id="final-score" style="font-size:1.2rem;"></p>
-        <button onclick="location.reload()">TEKRAR DENE</button>
+        <h2 style="margin:0; color:#f44336">Oyun Bitti!</h2>
+        <p id="final-score" style="font-weight:bold; margin:15px 0;"></p>
+        <button onclick="location.reload()">RESTART</button>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-
 <script>
     const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-
     const engine = Engine.create();
     const glass = document.getElementById('glass-container');
-    const touchLayer = document.getElementById('touch-layer');
-    
-    // Kavanozun iç boyutlarını alalım
     const cw = glass.clientWidth;
     const ch = glass.clientHeight;
 
-    // Render'ı kavanozun içine hapsediyoruz
     const render = Render.create({
-        element: glass,
-        engine: engine,
-        options: { width: cw, height: ch, wireframes: false, background: 'transparent' }
+        element: glass, engine: engine,
+        options: { width: cw, height: ch, wireframes: false, background: 'transparent', pixelRatio: 1 }
     });
 
-    // Kavanoz Fiziği (Kavanoz içindeki koordinatlar 0,0'dan başlar)
-    const thick = 40; // Duvar kalınlığı
-    const ground = Bodies.rectangle(cw/2, ch + thick/2 - 5, cw, thick, { isStatic: true, render: { visible: false } }); // Ahşap zemin
-    const leftWall = Bodies.rectangle(-thick/2 + 5, ch/2, thick, ch, { isStatic: true, render: { visible: false } }); // Sol cam duvar
-    const rightWall = Bodies.rectangle(cw + thick/2 - 5, ch/2, thick, ch, { isStatic: true, render: { visible: false } }); // Sağ cam duvar
-    const deadLine = ch * 0.15; // Yanma çizgisi
-
+    const ground = Bodies.rectangle(cw/2, ch+15, cw, 40, { isStatic: true });
+    const leftWall = Bodies.rectangle(-15, ch/2, 30, ch, { isStatic: true });
+    const rightWall = Bodies.rectangle(cw+15, ch/2, 30, ch, { isStatic: true });
+    const deadLine = ch * 0.15;
     Composite.add(engine.world, [ground, leftWall, rightWall]);
 
-    // Minnoş Meyve Listesi (Pastel Renkler ve İsimler)
     const FRUITS = [
-        { r: cw*0.06, color: '#ff8a80', name: 'KİRAZ', score: 2, emoji: '🍒' },
-        { r: cw*0.09, color: '#ba68c8', name: 'ÇİLEK', score: 4, emoji: '🍓' },
-        { r: cw*0.13, color: '#81c784', name: 'ÜZÜM', score: 6, emoji: '🍇' },
-        { r: cw*0.17, color: '#fff176', name: 'PORTAKAL', score: 10, emoji: '🍊', t: '#4e342e' },
-        { r: cw*0.22, color: '#ffb74d', name: 'ELMA', score: 15, emoji: '🍎' },
-        { r: cw*0.28, color: '#e57373', name: 'ARMUT', score: 25, emoji: '🍐' },
-        { r: cw*0.35, color: '#64b5f6', name: 'ANANAS', score: 40, emoji: '🍍' },
-        { r: cw*0.42, color: '#81d4fa', name: 'KARPUZ', score: 60, emoji: '🍉' }
+        { r: cw*0.06, color: '#ff8a80', emoji: '🍒', baseScore: 10 },
+        { r: cw*0.09, color: '#ba68c8', emoji: '🍓', baseScore: 25 },
+        { r: cw*0.13, color: '#81c784', emoji: '🍇', baseScore: 50 },
+        { r: cw*0.17, color: '#fff176', emoji: '🍊', baseScore: 100 },
+        { r: cw*0.22, color: '#ffb74d', emoji: '🍎', baseScore: 250 },
+        { r: cw*0.28, color: '#e57373', emoji: '🍐', baseScore: 500 },
+        { r: cw*0.35, color: '#64b5f6', emoji: '🍍', baseScore: 1000 },
+        { r: cw*0.42, color: '#2ecc71', emoji: '🍉', baseScore: 2500 }
     ];
 
-    let score = 0;
-    let nextLevel = 0; // Sıradaki meyvenin seviyesi
-    let isGameOver = false;
-    let canSpawn = true; // Spam filtresi
+    let particles = [];
+    let floatingTexts = [];
+    let score = 0, nextLevel = 0, isGameOver = false, canSpawn = true;
+    let comboCount = 0, lastMergeTime = 0;
 
     function createFruit(x, y, level) {
-        const f = FRUITS[level];
-        return Bodies.circle(x, y, f.r, {
-            label: 'fruit_'+level, restitution: 0.25, friction: 0.1,
+        return Bodies.circle(x, y, FRUITS[level].r, {
+            label: 'f_'+level, restitution: 0.2,
             plugin: { level: level, born: Date.now() },
-            render: { fillStyle: f.color, strokeStyle: 'rgba(0,0,0,0.1)', lineWidth: 2 }
+            render: { fillStyle: FRUITS[level].color }
         });
     }
 
-    // Tıklama ile Meyve Atma
-    touchLayer.addEventListener('pointerdown', (e) => {
+    // ULTRA BELİRGİN COMBO YAZISI
+    function spawnText(x, y, count) {
+        let txt = "GOOD!";
+        let color = "#fff"; // Beyaz
+        if (count > 1) { txt = "GREAT!"; color = "#ffeb3b"; } // Parlak Sarı
+        if (count > 2) { txt = "AWESOME!"; color = "#ff9800"; } // Parlak Turuncu
+        if (count > 3) { txt = "UNBELIEVABLE!"; color = "#f44336"; } // Parlak Kırmızı
+        if (count > 4) { txt = "LEGENDARY!"; color = "#e91e63"; } // Parlak Pembe
+
+        floatingTexts.push({
+            x: x, y: y, text: txt, color: color,
+            life: 1.0,
+            vy: -2
+        });
+    }
+
+    function triggerVibe(ms) { if ("vibrate" in navigator) navigator.vibrate(ms); }
+
+    document.getElementById('touch-layer').addEventListener('pointerdown', (e) => {
         if (isGameOver || !canSpawn) return;
         const rect = glass.getBoundingClientRect();
         let x = e.clientX - rect.left;
-        
-        // Kavanozun dışına tıklarsa atmasın
-        if (x < 0 || x > cw) return; 
-        
-        // Meyvenin duvarın içine doğmasını engelle
-        const maxR = FRUITS[nextLevel].r + 15;
-        x = Math.max(maxR, Math.min(x, cw - maxR));
-
-        // Meyveyi kavanozun içine at
-        const fruit = createFruit(x, deadLine - 30, nextLevel);
-        Composite.add(engine.world, fruit);
-        
-        // Sıradakini belirle ve güncelle
+        const limit = FRUITS[nextLevel].r + 10;
+        x = Math.max(limit, Math.min(x, cw - limit));
+        Composite.add(engine.world, createFruit(x, deadLine - 20, nextLevel));
         nextLevel = Math.floor(Math.random() * 3);
         document.getElementById('next-emoji').innerText = FRUITS[nextLevel].emoji;
-        
         canSpawn = false;
-        setTimeout(() => canSpawn = true, 550); // Spam filtresi
+        setTimeout(() => canSpawn = true, 500);
     });
 
-    // Meyve Birleşme Mantığı
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach(pair => {
             const { bodyA, bodyB } = pair;
-            if (bodyA.label === bodyB.label && bodyA.label.startsWith('fruit_')) {
+            if (bodyA.label === bodyB.label && bodyA.label.startsWith('f_')) {
                 const lvl = bodyA.plugin.level;
                 if (lvl < FRUITS.length - 1) {
                     const nx = (bodyA.position.x + bodyB.position.x) / 2;
                     const ny = (bodyA.position.y + bodyB.position.y) / 2;
                     
-                    // Eski meyveleri sil
+                    const now = Date.now();
+                    if (now - lastMergeTime < 1000) { comboCount++; } else { comboCount = 1; }
+                    lastMergeTime = now;
+
+                    spawnText(nx, ny, comboCount);
+                    triggerVibe(40 + (comboCount * 5));
+                    
                     Composite.remove(engine.world, [bodyA, bodyB]);
+                    Composite.add(engine.world, createFruit(nx, ny, lvl + 1));
                     
-                    // Yeni meyveyi bir boy büyük oluştur
-                    const nextFruit = createFruit(nx, ny, lvl + 1);
-                    Composite.add(engine.world, nextFruit);
-                    
-                    // Puanı artır ve UI güncelle
-                    score += FRUITS[lvl].score;
+                    score += (FRUITS[lvl].baseScore * comboCount);
                     document.getElementById('score-board').innerText = score;
                 }
             }
         });
     });
 
-    // Meyve İsimleri Çizimi ve Game Over Kontrolü
     Events.on(render, 'afterRender', () => {
         const ctx = render.context;
         const bodies = Composite.allBodies(engine.world);
         const now = Date.now();
 
+        // Uçan Yazıları Çiz (Belirginleştirildi)
+        floatingTexts = floatingTexts.filter(t => t.life > 0);
+        floatingTexts.forEach(t => {
+            ctx.save();
+            ctx.globalAlpha = t.life;
+            
+            // 1. Siyah Kontür (stroke) - Yazıyı arkadan ayırır
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 6; // Kalın kontür
+            ctx.font = `bold ${24 + (t.life * 12)}px Fredoka One`; // Biraz daha büyük başlangıç
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // 2. Kontürün altına hafif gölge (shadowBlur) - Derinlik katar
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            // Önce siyah çerçeveyi çiz
+            ctx.strokeText(t.text, t.x, t.y);
+            
+            // 3. Renkli İç Yazı - Çerçevenin üzerine çizilir
+            ctx.fillStyle = t.color;
+            ctx.fillText(t.text, t.x, t.y);
+            
+            t.y += t.vy;
+            t.life -= 0.015; // Biraz daha yavaş kaybolsun
+            ctx.restore();
+        });
+
+        // Meyveleri Çiz
         bodies.forEach(body => {
-            if (body.label.startsWith('fruit_')) {
+            if (body.label.startsWith('f_')) {
                 const lvl = body.plugin.level;
-                const data = FRUITS[lvl];
-                
                 ctx.save();
                 ctx.translate(body.position.x, body.position.y);
                 ctx.rotate(body.angle);
-                
-                // Meyvenin İsmini Yaz
-                ctx.fillStyle = data.t || "white";
-                ctx.font = `bold ${data.r * 0.4}px 'Fredoka One'`; // Sevimli yazı tipi
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                // Yazının altına hafif gölge
-                ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
-                ctx.fillText(data.name, 0, 3);
-                
+                ctx.font = `${FRUITS[lvl].r * 1.6}px Arial`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(FRUITS[lvl].emoji, 0, 4);
                 ctx.restore();
 
-                // Yanma Kontrolü (Daha esnek)
-                if (!isGameOver && body.position.y < deadLine && now - body.plugin.born > 2500 && Math.abs(body.velocity.y) < 0.15) {
+                if (!isGameOver && body.position.y < deadLine && now - body.plugin.born > 2500 && Math.abs(body.velocity.y) < 0.1) {
                     isGameOver = true;
                     document.getElementById('game-over').style.display = 'block';
-                    document.getElementById('final-score').innerText = "Toplam Skor: " + score;
+                    document.getElementById('final-score').innerText = "SCORE: " + score;
                 }
             }
         });
-
-        // Yanma Çizgisi (Daha yumuşak)
-        ctx.setLineDash([8, 8]);
-        ctx.beginPath(); ctx.moveTo(0, deadLine); ctx.lineTo(cw, deadLine);
-        ctx.strokeStyle = "rgba(233, 30, 99, 0.4)"; ctx.lineWidth = 3; ctx.stroke();
-        ctx.setLineDash([]);
     });
 
     Render.run(render);
-    Runner.run(Runner.create(), engine);
+    Runner.run(Runner.create({ isFixed: true }), engine);
 </script>
 </body>
 </html>
