@@ -2,201 +2,271 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Suika Combo King - Ultra Clear</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kilit Kırıcı - Fixed Edition</title>
     <style>
-        body { margin: 0; padding: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Fredoka One', cursive; }
-        #viewport { position: relative; width: 100%; height: 100%; max-width: 400px; max-height: 800px; background: #81d4fa; overflow: hidden; border-radius: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        #glass-container { position: relative; width: 85%; height: 72%; background: rgba(255, 255, 255, 0.2); border: 3px solid rgba(255, 255, 255, 0.4); border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; margin: 18% auto 0; z-index: 2; }
-        
-        #score-board { 
-            position: absolute; top: 20px; left: 20px; 
-            font-size: 32px; color: #fff; z-index: 10; 
-            text-shadow: 3px 3px 0px #0277bd; 
-            background: rgba(0,0,0,0.1); padding: 5px 15px; border-radius: 50px; 
+        :root { 
+            --bg-color: #121212; 
+            --accent-color: #f1c40f; 
+            --track-color: rgba(255, 255, 255, 0.15); 
+            --ring-size: 260px;
+            --thickness: 22px;
         }
         
-        #next-box { position: absolute; top: 20px; right: 20px; background: #fff; padding: 8px; border-radius: 15px; text-align: center; z-index: 10; border: 2px solid #0277bd; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
-        #touch-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 15; }
-        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 25px; text-align: center; z-index: 100; width: 220px; }
-        button { background: #ff7043; border: none; padding: 15px; color: white; border-radius: 12px; cursor: pointer; font-family: 'Fredoka One'; width: 100%; font-size: 20px; box-shadow: 0 5px 0 #b33939; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+
+        body {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; margin: 0; background-color: var(--bg-color); color: white;
+            font-family: 'Arial Black', sans-serif; overflow: hidden; user-select: none; touch-action: none;
+            transition: background 0.8s ease-in-out;
+        }
+
+        /* FX Stilleri */
+        .click-fx { position: fixed; pointer-events: none; z-index: 2000; border: 4px solid white; border-radius: 50%; transform: translate(-50%, -50%); animation: wave 0.5s ease-out forwards; }
+        @keyframes wave { 0% { width: 0; height: 0; opacity: 1; border-width: 8px; } 100% { width: 150px; height: 150px; opacity: 0; border-width: 1px; } }
+        .spark { position: fixed; pointer-events: none; z-index: 2000; width: 6px; height: 6px; border-radius: 50%; animation: sparkOut 0.6s ease-out forwards; }
+        @keyframes sparkOut { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
+
+        @keyframes rainbowBackground { 0% { background-color: #1e3799; } 25% { background-color: #b71540; } 50% { background-color: #079992; } 75% { background-color: #fa983a; } 100% { background-color: #1e3799; } }
+        .rainbow-active { animation: rainbowBackground 15s infinite linear !important; }
+        .neon-aura { box-shadow: 0 0 50px white, inset 0 0 20px white; border-color: rgba(255, 255, 255, 0.8) !important; }
+
+        .word-float { position: fixed; font-size: 2.8rem; font-weight: 900; color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.5); pointer-events: none; z-index: 1001; animation: wordPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes wordPop { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 50% { transform: scale(1.3) rotate(5deg); opacity: 1; } 100% { transform: scale(1) translateY(-60px); opacity: 0; } }
+
+        .shake { animation: shakeAnim 0.3s both; }
+        @keyframes shakeAnim { 10%, 90% { transform: translate3d(-2px,0,0); } 20%, 80% { transform: translate3d(4px,0,0); } 30%, 50%, 70% { transform: translate3d(-6px,0,0); } 40%, 60% { transform: translate3d(6px,0,0); } }
+        .particle { position: fixed; pointer-events: none; z-index: 1000; font-size: 1.5rem; animation: particleOut 0.8s ease-out forwards; }
+        @keyframes particleOut { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0) opacity: 0; } }
+
+        #game-box { position: relative; width: var(--ring-size); height: var(--ring-size); display: none; z-index: 10; }
+        .track { position: absolute; inset: 0; border: var(--thickness) solid var(--track-color); border-radius: 50%; }
+        .rotator { position: absolute; inset: 0; pointer-events: none; display: flex; justify-content: center; }
+        .block { position: absolute; width: 55px; height: var(--thickness); background: #fff; border-radius: 4px; box-shadow: 0 0 15px #fff; top: 0; }
+        #player-dot { position: absolute; width: 55px; height: var(--thickness); display: flex; align-items: center; justify-content: center; top: 0; font-size: 2rem; z-index: 100; }
+
+        .panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 9999; padding-top: 40px; }
+        .money-display { color: #f1c40f; font-weight: bold; font-size: 1.4rem; border: 2.5px solid #f1c40f; padding: 10px 30px; border-radius: 50px; margin-bottom: 15px; }
+        .btn { padding: 18px 40px; font-size: 1.3rem; background: #f1c40f; border: none; border-radius: 50px; margin: 10px; width: 85%; max-width: 320px; font-weight: bold; box-shadow: 0 4px 0 #b8860b; }
+        
+        #ui-header { position: absolute; top: 50px; text-align: center; display: none; width: 100%; z-index: 100; }
+        #combo-bar { width: 140px; height: 8px; background: rgba(255,255,255,0.1); margin: 10px auto; border-radius: 4px; overflow: hidden; }
+        #combo-fill { height: 100%; width: 100%; background: #f1c40f; transform: scaleX(0); transform-origin: left; transition: transform 0.1s linear; }
+        #touch-layer { position: fixed; inset: 0; z-index: 50; display: none; }
+
+        .market-list { width: 90%; max-width: 400px; height: 60vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .market-item { background: #1a1a1a; border: 2px solid #333; border-radius: 15px; padding: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .market-item.active { border-color: #f1c40f; background: #222; }
     </style>
 </head>
 <body>
 
-<div id="viewport">
-    <div id="score-board">0</div>
-    <div id="next-box"><div id="next-emoji" style="font-size: 30px;">🍒</div></div>
-    <div id="glass-container"></div>
     <div id="touch-layer"></div>
-    <div id="game-over">
-        <h2 style="margin:0; color:#f44336">Oyun Bitti!</h2>
-        <p id="final-score" style="font-weight:bold; margin:15px 0;"></p>
-        <button onclick="location.reload()">RESTART</button>
+
+    <div id="menu" class="panel" style="display: flex;">
+        <h1 style="color:#f1c40f; font-size: 2.2rem;">KİLİT KIR</h1>
+        <div class="money-display">💰 <span class="m-val">0</span></div>
+        <button class="btn" onclick="start()">OYNA</button>
+        <button class="btn" style="background:#3498db; box-shadow: 0 4px 0 #2980b9; color:white;" onclick="openMarket()">MARKET</button>
+        <button class="btn" style="background:#9b59b6; box-shadow: 0 4px 0 #8e44ad; color:white;" onclick="openInventory()">ÇANTA</button>
     </div>
-</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-<script>
-    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-    const engine = Engine.create();
-    const glass = document.getElementById('glass-container');
-    const cw = glass.clientWidth;
-    const ch = glass.clientHeight;
+    <div id="ui-header">
+        <div style="color:#f1c40f;">💰 <span class="m-val">0</span></div>
+        <div id="hits" style="font-size: 5.5rem; font-weight: 900; margin: 5px 0;">3</div>
+        <div id="combo-bar"><div id="combo-fill"></div></div>
+        <div id="combo-count" style="color:#f1c40f">COMBO x0</div>
+    </div>
 
-    const render = Render.create({
-        element: glass, engine: engine,
-        options: { width: cw, height: ch, wireframes: false, background: 'transparent', pixelRatio: 1 }
-    });
+    <div id="game-box">
+        <div id="ring-track" class="track"></div>
+        <div id="t-cont" class="rotator"><div class="block"></div></div>
+        <div id="p-cont" class="rotator"><div id="player-dot">🟡</div></div>
+    </div>
 
-    const ground = Bodies.rectangle(cw/2, ch+15, cw, 40, { isStatic: true });
-    const leftWall = Bodies.rectangle(-15, ch/2, 30, ch, { isStatic: true });
-    const rightWall = Bodies.rectangle(cw+15, ch/2, 30, ch, { isStatic: true });
-    const deadLine = ch * 0.15;
-    Composite.add(engine.world, [ground, leftWall, rightWall]);
+    <div id="death" class="panel">
+        <h1 style="color:#ff4757; font-size: 3.5rem;">BOOM!</h1>
+        <button class="btn" onclick="start()">TEKRAR DENE</button>
+        <button class="btn" style="background:#333; box-shadow: 0 4px 0 #111; color:white;" onclick="location.reload()">MENÜ</button>
+    </div>
 
-    const FRUITS = [
-        { r: cw*0.06, color: '#ff8a80', emoji: '🍒', baseScore: 10 },
-        { r: cw*0.09, color: '#ba68c8', emoji: '🍓', baseScore: 25 },
-        { r: cw*0.13, color: '#81c784', emoji: '🍇', baseScore: 50 },
-        { r: cw*0.17, color: '#fff176', emoji: '🍊', baseScore: 100 },
-        { r: cw*0.22, color: '#ffb74d', emoji: '🍎', baseScore: 250 },
-        { r: cw*0.28, color: '#e57373', emoji: '🍐', baseScore: 500 },
-        { r: cw*0.35, color: '#64b5f6', emoji: '🍍', baseScore: 1000 },
-        { r: cw*0.42, color: '#2ecc71', emoji: '🍉', baseScore: 2500 }
-    ];
+    <div id="market-panel" class="panel">
+        <h2 style="color:#f1c40f">MARKET</h2>
+        <div id="market-list" class="market-list"></div>
+        <button class="btn" onclick="closePanels()" style="background:#333; box-shadow:0 4px 0 #111; color:white;">GERİ</button>
+    </div>
 
-    let particles = [];
-    let floatingTexts = [];
-    let score = 0, nextLevel = 0, isGameOver = false, canSpawn = true;
-    let comboCount = 0, lastMergeTime = 0;
+    <div id="inv-panel" class="panel">
+        <h2 style="color:#f1c40f">ÇANTAM</h2>
+        <div id="inv-list" class="market-list"></div>
+        <button class="btn" onclick="closePanels()" style="background:#333; box-shadow:0 4px 0 #111; color:white;">GERİ</button>
+    </div>
 
-    function createFruit(x, y, level) {
-        return Bodies.circle(x, y, FRUITS[level].r, {
-            label: 'f_'+level, restitution: 0.2,
-            plugin: { level: level, born: Date.now() },
-            render: { fillStyle: FRUITS[level].color }
-        });
-    }
+    <script>
+        // --- DATA ---
+        let money = parseInt(localStorage.getItem('lockMoney')) || 0;
+        let owned = JSON.parse(localStorage.getItem('lockOwned')) || ['🟡'];
+        let active = localStorage.getItem('lockActive') || '🟡';
+        const skins = [{i:'🟡',p:0}, {i:'🟢',p:250}, {i:'🔵',p:500}, {i:'🟣',p:1000}, {i:'👻',p:2500}, {i:'🐱',p:5000}, {i:'🦊',p:7500}, {i:'🐸',p:10000}, {i:'🚀',p:15000}, {i:'👾',p:20000}, {i:'🍀',p:25000}, {i:'🧿',p:30000}, {i:'🔥',p:40000}, {i:'❄️',p:45000}, {i:'⚡',p:50000}, {i:'💀',p:60000}, {i:'💎',p:75000}, {i:'🌈',p:85000}, {i:'👑',p:100000}];
+        const bgColors = ["#121212", "#1e3799", "#b71540", "#079992", "#fa983a", "#8e44ad", "#2c3e50", "#16a085"];
+        const words = ["GREAT!", "PERFECT!", "AMAZING!", "GODLIKE!", "UNBELIEVABLE!"];
 
-    // ULTRA BELİRGİN COMBO YAZISI
-    function spawnText(x, y, count) {
-        let txt = "GOOD!";
-        let color = "#fff"; // Beyaz
-        if (count > 1) { txt = "GREAT!"; color = "#ffeb3b"; } // Parlak Sarı
-        if (count > 2) { txt = "AWESOME!"; color = "#ff9800"; } // Parlak Turuncu
-        if (count > 3) { txt = "UNBELIEVABLE!"; color = "#f44336"; } // Parlak Kırmızı
-        if (count > 4) { txt = "LEGENDARY!"; color = "#e91e63"; } // Parlak Pembe
+        // --- STATE ---
+        let isPlaying = false, angle = 0, dir = 1, speed = 1.8, level = 1, hits = 3;
+        let targetAngle = 0, targetDir = 1, targetSpeed = 0.4, combo = 0, comboT = 0;
 
-        floatingTexts.push({
-            x: x, y: y, text: txt, color: color,
-            life: 1.0,
-            vy: -2
-        });
-    }
+        function vib(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 
-    function triggerVibe(ms) { if ("vibrate" in navigator) navigator.vibrate(ms); }
+        function createClickFX(x, y) {
+            const fx = document.createElement('div');
+            fx.className = 'click-fx'; fx.style.left = x + 'px'; fx.style.top = y + 'px';
+            fx.style.borderColor = (combo >= 10) ? '#00fbff' : 'white';
+            document.body.appendChild(fx); setTimeout(() => fx.remove(), 500);
 
-    document.getElementById('touch-layer').addEventListener('pointerdown', (e) => {
-        if (isGameOver || !canSpawn) return;
-        const rect = glass.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        const limit = FRUITS[nextLevel].r + 10;
-        x = Math.max(limit, Math.min(x, cw - limit));
-        Composite.add(engine.world, createFruit(x, deadLine - 20, nextLevel));
-        nextLevel = Math.floor(Math.random() * 3);
-        document.getElementById('next-emoji').innerText = FRUITS[nextLevel].emoji;
-        canSpawn = false;
-        setTimeout(() => canSpawn = true, 500);
-    });
+            for(let i=0; i<6; i++){
+                const s = document.createElement('div');
+                s.className = 'spark'; s.style.left = x + 'px'; s.style.top = y + 'px';
+                s.style.backgroundColor = (combo >= 10) ? '#f1c40f' : 'white';
+                s.style.setProperty('--x', (Math.random()-0.5)*150+'px');
+                s.style.setProperty('--y', (Math.random()-0.5)*150+'px');
+                document.body.appendChild(s); setTimeout(() => s.remove(), 600);
+            }
+        }
 
-    Events.on(engine, 'collisionStart', (event) => {
-        event.pairs.forEach(pair => {
-            const { bodyA, bodyB } = pair;
-            if (bodyA.label === bodyB.label && bodyA.label.startsWith('f_')) {
-                const lvl = bodyA.plugin.level;
-                if (lvl < FRUITS.length - 1) {
-                    const nx = (bodyA.position.x + bodyB.position.x) / 2;
-                    const ny = (bodyA.position.y + bodyB.position.y) / 2;
-                    
-                    const now = Date.now();
-                    if (now - lastMergeTime < 1000) { comboCount++; } else { comboCount = 1; }
-                    lastMergeTime = now;
+        function updateM() {
+            document.querySelectorAll('.m-val').forEach(e => e.innerText = money.toLocaleString());
+            document.getElementById('player-dot').innerText = active;
+            localStorage.setItem('lockMoney', money);
+            localStorage.setItem('lockOwned', JSON.stringify(owned));
+            localStorage.setItem('lockActive', active);
+        }
 
-                    spawnText(nx, ny, comboCount);
-                    triggerVibe(40 + (comboCount * 5));
-                    
-                    Composite.remove(engine.world, [bodyA, bodyB]);
-                    Composite.add(engine.world, createFruit(nx, ny, lvl + 1));
-                    
-                    score += (FRUITS[lvl].baseScore * comboCount);
-                    document.getElementById('score-board').innerText = score;
+        function showWord(txt) {
+            const w = document.createElement('div'); w.className = 'word-float'; w.innerText = txt;
+            w.style.left = (window.innerWidth/2 - 70) + 'px'; w.style.top = '30%';
+            document.body.appendChild(w); setTimeout(() => w.remove(), 800);
+        }
+
+        function triggerShatter() {
+            vib(200); document.body.classList.add('shake');
+            document.body.classList.remove('rainbow-active');
+            document.getElementById('ring-track').classList.remove('neon-aura');
+            document.body.style.backgroundColor = "#121212";
+            const rect = document.getElementById('player-dot').getBoundingClientRect();
+            for (let i = 0; i < 10; i++) {
+                const p = document.createElement('div'); p.className = 'particle'; p.innerText = active;
+                p.style.left = (rect.left + rect.width/2) + 'px'; p.style.top = (rect.top + rect.height/2) + 'px';
+                p.style.setProperty('--dx', (Math.random()-0.5)*400+'px'); p.style.setProperty('--dy', (Math.random()-0.5)*400+'px');
+                document.body.appendChild(p); setTimeout(() => p.remove(), 800);
+            }
+            document.getElementById('game-box').style.display = 'none';
+            document.getElementById('touch-layer').style.display = 'none'; // Fix 1: Öldükten sonra tıklamayı kes
+            setTimeout(() => { document.getElementById('death').style.display = 'flex'; }, 600);
+        }
+
+        function start() {
+            isPlaying = true; level = 1; hits = 3; speed = 1.8; combo = 0; comboT = 0; targetSpeed = 0.4; angle = 0;
+            document.body.style.backgroundColor = bgColors[0];
+            document.body.classList.remove('shake');
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.getElementById('ui-header').style.display = 'block';
+            document.getElementById('game-box').style.display = 'block';
+            document.getElementById('touch-layer').style.display = 'block';
+            spawnTarget(); updateUI(); updateM();
+        }
+
+        function spawnTarget() {
+            targetAngle = (angle + 110 + Math.random() * 140) % 360; // Fix 2: Hedef aralığını optimize et
+            targetDir = Math.random() > 0.5 ? 1 : -1;
+            document.getElementById('t-cont').style.transform = `rotate(${targetAngle}deg)`;
+        }
+
+        function action(e) {
+            if(!isPlaying) return;
+            const touchX = e.touches ? e.touches[0].clientX : e.clientX;
+            const touchY = e.touches ? e.touches[0].clientY : e.clientY;
+            createClickFX(touchX, touchY);
+
+            let pA = ((angle % 360) + 360) % 360;
+            let tA = ((targetAngle % 360) + 360) % 360;
+            let diff = Math.min(Math.abs(pA - tA), 360 - Math.abs(pA - tA));
+
+            if(diff <= 35) {
+                vib(40); combo++; comboT = 3200;
+                if(combo % 5 === 0) showWord(words[Math.min(Math.floor(combo/5)-1, words.length-1)]);
+                if(combo % 3 === 0 && combo < 10) document.body.style.backgroundColor = bgColors[Math.floor(Math.random()*bgColors.length)];
+                if(combo === 10) { document.getElementById('ring-track').classList.add('neon-aura'); document.body.classList.add('rainbow-active'); }
+
+                money += (level * 10 * combo); hits--;
+                if(hits <= 0) { 
+                    level++; 
+                    hits = Math.min(level + 2, 10); 
+                    speed = Math.min(speed + 0.15, 5); // Aşırı hızı limitle
+                    targetSpeed += 0.05; 
+                }
+                dir *= -1; spawnTarget(); updateUI(); updateM();
+            } else { isPlaying = false; triggerShatter(); }
+        }
+
+        const tl = document.getElementById('touch-layer');
+        tl.addEventListener('touchstart', (e) => { e.preventDefault(); action(e); }, {passive: false});
+        tl.addEventListener('mousedown', (e) => { if(!('ontouchstart' in window)) action(e); });
+
+        function updateUI() {
+            document.getElementById('hits').innerText = hits;
+            document.getElementById('combo-count').innerText = 'COMBO x' + combo;
+        }
+
+        function loop() {
+            if(isPlaying) {
+                angle += speed * dir; 
+                document.getElementById('p-cont').style.transform = `rotate(${angle}deg)`;
+                targetAngle += targetSpeed * targetDir; 
+                document.getElementById('t-cont').style.transform = `rotate(${targetAngle}deg)`;
+                if(comboT > 0) { 
+                    comboT -= 16; 
+                    document.getElementById('combo-fill').style.transform = `scaleX(${comboT/3200})`; 
+                } else if(combo > 0) { 
+                    combo = 0; 
+                    document.getElementById('ring-track').classList.remove('neon-aura'); 
+                    document.body.classList.remove('rainbow-active'); 
+                    document.body.style.backgroundColor = bgColors[0]; 
+                    updateUI(); 
                 }
             }
-        });
-    });
+            requestAnimationFrame(loop);
+        }
 
-    Events.on(render, 'afterRender', () => {
-        const ctx = render.context;
-        const bodies = Composite.allBodies(engine.world);
-        const now = Date.now();
+        function openMarket() {
+            const list = document.getElementById('market-list'); list.innerHTML = '';
+            skins.forEach(s => {
+                const item = document.createElement('div');
+                item.className = `market-item ${active === s.i ? 'active' : ''}`;
+                item.innerHTML = `<span style="font-size:2rem">${s.i}</span> <span>${owned.includes(s.i) ? 'ALINDI' : s.p + ' 💰'}</span>`;
+                item.onclick = (e) => { e.stopPropagation(); if(!owned.includes(s.i) && money >= s.p) { money -= s.p; owned.push(s.i); updateM(); openMarket(); } };
+                list.appendChild(item);
+            });
+            document.getElementById('market-panel').style.display = 'flex';
+        }
 
-        // Uçan Yazıları Çiz (Belirginleştirildi)
-        floatingTexts = floatingTexts.filter(t => t.life > 0);
-        floatingTexts.forEach(t => {
-            ctx.save();
-            ctx.globalAlpha = t.life;
-            
-            // 1. Siyah Kontür (stroke) - Yazıyı arkadan ayırır
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 6; // Kalın kontür
-            ctx.font = `bold ${24 + (t.life * 12)}px Fredoka One`; // Biraz daha büyük başlangıç
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // 2. Kontürün altına hafif gölge (shadowBlur) - Derinlik katar
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 8;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-            
-            // Önce siyah çerçeveyi çiz
-            ctx.strokeText(t.text, t.x, t.y);
-            
-            // 3. Renkli İç Yazı - Çerçevenin üzerine çizilir
-            ctx.fillStyle = t.color;
-            ctx.fillText(t.text, t.x, t.y);
-            
-            t.y += t.vy;
-            t.life -= 0.015; // Biraz daha yavaş kaybolsun
-            ctx.restore();
-        });
+        function openInventory() {
+            const list = document.getElementById('inv-list'); list.innerHTML = '';
+            owned.forEach(s => {
+                const item = document.createElement('div');
+                item.className = `market-item ${active === s ? 'active' : ''}`;
+                item.innerHTML = `<span style="font-size:2rem">${s}</span> <span>${active === s ? 'SEÇİLİ' : 'SEÇ'}</span>`;
+                item.onclick = (e) => { e.stopPropagation(); active = s; updateM(); openInventory(); };
+                list.appendChild(item);
+            });
+            document.getElementById('inv-panel').style.display = 'flex';
+        }
 
-        // Meyveleri Çiz
-        bodies.forEach(body => {
-            if (body.label.startsWith('f_')) {
-                const lvl = body.plugin.level;
-                ctx.save();
-                ctx.translate(body.position.x, body.position.y);
-                ctx.rotate(body.angle);
-                ctx.font = `${FRUITS[lvl].r * 1.6}px Arial`;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(FRUITS[lvl].emoji, 0, 4);
-                ctx.restore();
+        function closePanels() { 
+            document.querySelectorAll('.panel').forEach(p => { if(p.id !== 'menu') p.style.display = 'none'; }); 
+        }
 
-                if (!isGameOver && body.position.y < deadLine && now - body.plugin.born > 2500 && Math.abs(body.velocity.y) < 0.1) {
-                    isGameOver = true;
-                    document.getElementById('game-over').style.display = 'block';
-                    document.getElementById('final-score').innerText = "SCORE: " + score;
-                }
-            }
-        });
-    });
-
-    Render.run(render);
-    Runner.run(Runner.create({ isFixed: true }), engine);
-</script>
+        updateM(); loop();
+    </script>
 </body>
 </html>
