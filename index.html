@@ -3,80 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Kilit Kırıcı - Fixed Edition</title>
+    <title>Kilit Kırıcı - Level Edition</title>
     <style>
-        :root { 
-            --bg-color: #121212; 
-            --accent-color: #f1c40f; 
-            --track-color: rgba(255, 255, 255, 0.15); 
-            --ring-size: 260px;
-            --thickness: 22px;
-        }
-        
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-
-        body {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; margin: 0; background-color: var(--bg-color); color: white;
-            font-family: 'Arial Black', sans-serif; overflow: hidden; user-select: none; touch-action: none;
-            transition: background 0.8s ease-in-out;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background: #121212; margin: 0; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; font-family: 'Arial Black', sans-serif;
+            transition: background 0.5s;
         }
 
-        /* FX Stilleri */
-        .click-fx { position: fixed; pointer-events: none; z-index: 2000; border: 4px solid white; border-radius: 50%; transform: translate(-50%, -50%); animation: wave 0.5s ease-out forwards; }
-        @keyframes wave { 0% { width: 0; height: 0; opacity: 1; border-width: 8px; } 100% { width: 150px; height: 150px; opacity: 0; border-width: 1px; } }
-        .spark { position: fixed; pointer-events: none; z-index: 2000; width: 6px; height: 6px; border-radius: 50%; animation: sparkOut 0.6s ease-out forwards; }
-        @keyframes sparkOut { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
+        #p-cont, #t-cont, #combo-fill, .word-float { will-change: transform; }
 
-        @keyframes rainbowBackground { 0% { background-color: #1e3799; } 25% { background-color: #b71540; } 50% { background-color: #079992; } 75% { background-color: #fa983a; } 100% { background-color: #1e3799; } }
-        .rainbow-active { animation: rainbowBackground 15s infinite linear !important; }
-        .neon-aura { box-shadow: 0 0 50px white, inset 0 0 20px white; border-color: rgba(255, 255, 255, 0.8) !important; }
+        @keyframes rainbow {
+            0% { background-color: #1e3799; }
+            25% { background-color: #b71540; }
+            50% { background-color: #079992; }
+            75% { background-color: #fa983a; }
+            100% { background-color: #1e3799; }
+        }
+        .rainbow-active { animation: rainbow 10s infinite linear; }
+        .neon-aura { box-shadow: 0 0 40px #fff; border-color: rgba(255,255,255,0.9) !important; }
 
-        .word-float { position: fixed; font-size: 2.8rem; font-weight: 900; color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.5); pointer-events: none; z-index: 1001; animation: wordPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes wordPop { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 50% { transform: scale(1.3) rotate(5deg); opacity: 1; } 100% { transform: scale(1) translateY(-60px); opacity: 0; } }
+        .word-float { 
+            position: fixed; font-size: 2.5rem; font-weight: 900; color: #fff; 
+            text-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; z-index: 1001; 
+            animation: wordPop 0.6s forwards; left: 50%; transform: translateX(-50%);
+        }
+        @keyframes wordPop { 
+            0% { transform: translate(-50%, 0) scale(0); opacity: 0; } 
+            50% { transform: translate(-50%, -20px) scale(1.2); opacity: 1; } 
+            100% { transform: translate(-50%, -60px) scale(1); opacity: 0; } 
+        }
 
-        .shake { animation: shakeAnim 0.3s both; }
-        @keyframes shakeAnim { 10%, 90% { transform: translate3d(-2px,0,0); } 20%, 80% { transform: translate3d(4px,0,0); } 30%, 50%, 70% { transform: translate3d(-6px,0,0); } 40%, 60% { transform: translate3d(6px,0,0); } }
-        .particle { position: fixed; pointer-events: none; z-index: 1000; font-size: 1.5rem; animation: particleOut 0.8s ease-out forwards; }
-        @keyframes particleOut { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0) opacity: 0; } }
-
-        #game-box { position: relative; width: var(--ring-size); height: var(--ring-size); display: none; z-index: 10; }
-        .track { position: absolute; inset: 0; border: var(--thickness) solid var(--track-color); border-radius: 50%; }
+        #game-box { position: relative; width: 260px; height: 260px; display: none; z-index: 10; }
+        .track { position: absolute; inset: 0; border: 22px solid rgba(255,255,255,0.12); border-radius: 50%; transition: 0.3s; }
         .rotator { position: absolute; inset: 0; pointer-events: none; display: flex; justify-content: center; }
-        .block { position: absolute; width: 55px; height: var(--thickness); background: #fff; border-radius: 4px; box-shadow: 0 0 15px #fff; top: 0; }
-        #player-dot { position: absolute; width: 55px; height: var(--thickness); display: flex; align-items: center; justify-content: center; top: 0; font-size: 2rem; z-index: 100; }
+        .block { position: absolute; width: 55px; height: 22px; background: #fff; border-radius: 4px; box-shadow: 0 0 15px #fff; top: 0; }
+        #player-dot { position: absolute; width: 55px; height: 22px; display: flex; align-items: center; justify-content: center; top: 0; font-size: 1.8rem; }
 
-        .panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 9999; padding-top: 40px; }
-        .money-display { color: #f1c40f; font-weight: bold; font-size: 1.4rem; border: 2.5px solid #f1c40f; padding: 10px 30px; border-radius: 50px; margin-bottom: 15px; }
-        .btn { padding: 18px 40px; font-size: 1.3rem; background: #f1c40f; border: none; border-radius: 50px; margin: 10px; width: 85%; max-width: 320px; font-weight: bold; box-shadow: 0 4px 0 #b8860b; }
-        
-        #ui-header { position: absolute; top: 50px; text-align: center; display: none; width: 100%; z-index: 100; }
-        #combo-bar { width: 140px; height: 8px; background: rgba(255,255,255,0.1); margin: 10px auto; border-radius: 4px; overflow: hidden; }
-        #combo-fill { height: 100%; width: 100%; background: #f1c40f; transform: scaleX(0); transform-origin: left; transition: transform 0.1s linear; }
-        #touch-layer { position: fixed; inset: 0; z-index: 50; display: none; }
+        .panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: white; }
+        .btn { padding: 16px 30px; font-size: 1.1rem; border: none; border-radius: 50px; margin: 6px; width: 80%; max-width: 280px; font-weight: bold; cursor: pointer; transition: 0.1s; }
+        .btn:active { transform: scale(0.95); }
+        .m-display { color: #f1c40f; font-weight: bold; font-size: 1.2rem; border: 2px solid #f1c40f; padding: 8px 25px; border-radius: 50px; margin-bottom: 15px; }
 
-        .market-list { width: 90%; max-width: 400px; height: 60vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .market-item { background: #1a1a1a; border: 2px solid #333; border-radius: 15px; padding: 15px; display: flex; align-items: center; justify-content: space-between; }
-        .market-item.active { border-color: #f1c40f; background: #222; }
+        .list-container { 
+            width: 90%; max-width: 350px; max-height: 50vh; overflow-y: auto; 
+            background: #1a1a1a; border-radius: 15px; padding: 10px; border: 1px solid #333;
+        }
+        .list-item { 
+            background: #252525; margin: 5px 0; padding: 12px 15px; border-radius: 10px; 
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .list-item.active { border-color: #f1c40f; background: #333; }
+
+        #ui-header { position: absolute; top: 40px; text-align: center; display: none; width: 100%; z-index: 100; color: white; pointer-events: none; }
+        #combo-bar { width: 120px; height: 6px; background: rgba(255,255,255,0.1); margin: 8px auto; border-radius: 3px; overflow: hidden; }
+        #combo-fill { height: 100%; width: 100%; background: #f1c40f; transform: scaleX(0); transform-origin: left; }
+        #level-display { color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
-    <div id="touch-layer"></div>
+    <div id="touch-layer" style="position:fixed; inset:0; z-index:50; display:none;"></div>
 
     <div id="menu" class="panel" style="display: flex;">
-        <h1 style="color:#f1c40f; font-size: 2.2rem;">KİLİT KIR</h1>
-        <div class="money-display">💰 <span class="m-val">0</span></div>
-        <button class="btn" onclick="start()">OYNA</button>
-        <button class="btn" style="background:#3498db; box-shadow: 0 4px 0 #2980b9; color:white;" onclick="openMarket()">MARKET</button>
-        <button class="btn" style="background:#9b59b6; box-shadow: 0 4px 0 #8e44ad; color:white;" onclick="openInventory()">ÇANTA</button>
+        <h1 style="color:#f1c40f; font-size: 2.2rem; margin-bottom: 10px;">KİLİT KIR</h1>
+        <div class="m-display">💰 <span class="m-val">0</span></div>
+        <button class="btn" style="background:#f1c40f;" onclick="start()">OYNA</button>
+        <button class="btn" style="background:#3498db; color:white;" onclick="openMarket()">MARKET</button>
+        <button class="btn" style="background:#9b59b6; color:white;" onclick="openInventory()">ÇANTA</button>
     </div>
 
     <div id="ui-header">
-        <div style="color:#f1c40f;">💰 <span class="m-val">0</span></div>
-        <div id="hits" style="font-size: 5.5rem; font-weight: 900; margin: 5px 0;">3</div>
+        <div id="level-display">BÖLÜM 1</div>
+        <div style="color:#f1c40f; font-size: 0.9rem;">💰 <span class="m-val">0</span></div>
+        <div id="hits" style="font-size: 5rem; font-weight: 900; margin: 2px 0;">3</div>
         <div id="combo-bar"><div id="combo-fill"></div></div>
-        <div id="combo-count" style="color:#f1c40f">COMBO x0</div>
+        <div id="combo-count" style="color:#f1c40f; font-size: 0.9rem;">COMBO x0</div>
     </div>
 
     <div id="game-box">
@@ -86,53 +91,44 @@
     </div>
 
     <div id="death" class="panel">
-        <h1 style="color:#ff4757; font-size: 3.5rem;">BOOM!</h1>
-        <button class="btn" onclick="start()">TEKRAR DENE</button>
-        <button class="btn" style="background:#333; box-shadow: 0 4px 0 #111; color:white;" onclick="location.reload()">MENÜ</button>
+        <h1 style="color:#ff4757; font-size: 3.5rem; margin-bottom: 20px;">BOOM!</h1>
+        <div id="final-lvl" style="margin-bottom: 15px;">Bölüm: 1</div>
+        <button class="btn" style="background:#f1c40f;" onclick="start()">TEKRAR DENE</button>
+        <button class="btn" style="background:#333; color:white;" onclick="location.reload()">MENÜ</button>
     </div>
 
     <div id="market-panel" class="panel">
-        <h2 style="color:#f1c40f">MARKET</h2>
-        <div id="market-list" class="market-list"></div>
-        <button class="btn" onclick="closePanels()" style="background:#333; box-shadow:0 4px 0 #111; color:white;">GERİ</button>
+        <h2 style="color:#3498db; margin-top: 0;">MARKET</h2>
+        <div class="list-container" id="market-list"></div>
+        <button class="btn" style="margin-top: 15px; background:#333;" onclick="closePanels()">GERİ</button>
     </div>
 
     <div id="inv-panel" class="panel">
-        <h2 style="color:#f1c40f">ÇANTAM</h2>
-        <div id="inv-list" class="market-list"></div>
-        <button class="btn" onclick="closePanels()" style="background:#333; box-shadow:0 4px 0 #111; color:white;">GERİ</button>
+        <h2 style="color:#9b59b6; margin-top: 0;">ÇANTAM</h2>
+        <div class="list-container" id="inv-list"></div>
+        <button class="btn" style="margin-top: 15px; background:#333;" onclick="closePanels()">GERİ</button>
     </div>
 
     <script>
-        // --- DATA ---
+        const track = document.getElementById('ring-track');
+        const comboFill = document.getElementById('combo-fill');
+        const pCont = document.getElementById('p-cont');
+        const tCont = document.getElementById('t-cont');
+        const hitsEl = document.getElementById('hits');
+        const comboEl = document.getElementById('combo-count');
+        const levelEl = document.getElementById('level-display');
+
         let money = parseInt(localStorage.getItem('lockMoney')) || 0;
         let owned = JSON.parse(localStorage.getItem('lockOwned')) || ['🟡'];
         let active = localStorage.getItem('lockActive') || '🟡';
-        const skins = [{i:'🟡',p:0}, {i:'🟢',p:250}, {i:'🔵',p:500}, {i:'🟣',p:1000}, {i:'👻',p:2500}, {i:'🐱',p:5000}, {i:'🦊',p:7500}, {i:'🐸',p:10000}, {i:'🚀',p:15000}, {i:'👾',p:20000}, {i:'🍀',p:25000}, {i:'🧿',p:30000}, {i:'🔥',p:40000}, {i:'❄️',p:45000}, {i:'⚡',p:50000}, {i:'💀',p:60000}, {i:'💎',p:75000}, {i:'🌈',p:85000}, {i:'👑',p:100000}];
-        const bgColors = ["#121212", "#1e3799", "#b71540", "#079992", "#fa983a", "#8e44ad", "#2c3e50", "#16a085"];
+        
+        const skins = [{i:'🟡',p:0}, {i:'🟢',p:250}, {i:'🔵',p:500}, {i:'🟣',p:1000}, {i:'👻',p:2500}, {i:'🚀',p:15000}, {i:'💎',p:75000}, {i:'👑',p:100000}];
+        const bgColors = ["#121212", "#1e3799", "#b71540", "#079992", "#fa983a"];
         const words = ["GREAT!", "PERFECT!", "AMAZING!", "GODLIKE!", "UNBELIEVABLE!"];
 
-        // --- STATE ---
-        let isPlaying = false, angle = 0, dir = 1, speed = 1.8, level = 1, hits = 3;
-        let targetAngle = 0, targetDir = 1, targetSpeed = 0.4, combo = 0, comboT = 0;
-
-        function vib(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
-
-        function createClickFX(x, y) {
-            const fx = document.createElement('div');
-            fx.className = 'click-fx'; fx.style.left = x + 'px'; fx.style.top = y + 'px';
-            fx.style.borderColor = (combo >= 10) ? '#00fbff' : 'white';
-            document.body.appendChild(fx); setTimeout(() => fx.remove(), 500);
-
-            for(let i=0; i<6; i++){
-                const s = document.createElement('div');
-                s.className = 'spark'; s.style.left = x + 'px'; s.style.top = y + 'px';
-                s.style.backgroundColor = (combo >= 10) ? '#f1c40f' : 'white';
-                s.style.setProperty('--x', (Math.random()-0.5)*150+'px');
-                s.style.setProperty('--y', (Math.random()-0.5)*150+'px');
-                document.body.appendChild(s); setTimeout(() => s.remove(), 600);
-            }
-        }
+        let isPlaying = false, angle = 0, dir = 1, speed = 2.4, level = 1, hits = 3;
+        let targetAngle = 0, targetDir = 1, targetSpeed = 0.6, combo = 0, comboT = 0;
+        const COMBO_MAX = 2400;
 
         function updateM() {
             document.querySelectorAll('.m-val').forEach(e => e.innerText = money.toLocaleString());
@@ -142,130 +138,110 @@
             localStorage.setItem('lockActive', active);
         }
 
-        function showWord(txt) {
-            const w = document.createElement('div'); w.className = 'word-float'; w.innerText = txt;
-            w.style.left = (window.innerWidth/2 - 70) + 'px'; w.style.top = '30%';
-            document.body.appendChild(w); setTimeout(() => w.remove(), 800);
-        }
-
-        function triggerShatter() {
-            vib(200); document.body.classList.add('shake');
-            document.body.classList.remove('rainbow-active');
-            document.getElementById('ring-track').classList.remove('neon-aura');
-            document.body.style.backgroundColor = "#121212";
-            const rect = document.getElementById('player-dot').getBoundingClientRect();
-            for (let i = 0; i < 10; i++) {
-                const p = document.createElement('div'); p.className = 'particle'; p.innerText = active;
-                p.style.left = (rect.left + rect.width/2) + 'px'; p.style.top = (rect.top + rect.height/2) + 'px';
-                p.style.setProperty('--dx', (Math.random()-0.5)*400+'px'); p.style.setProperty('--dy', (Math.random()-0.5)*400+'px');
-                document.body.appendChild(p); setTimeout(() => p.remove(), 800);
-            }
-            document.getElementById('game-box').style.display = 'none';
-            document.getElementById('touch-layer').style.display = 'none'; // Fix 1: Öldükten sonra tıklamayı kes
-            setTimeout(() => { document.getElementById('death').style.display = 'flex'; }, 600);
-        }
-
         function start() {
-            isPlaying = true; level = 1; hits = 3; speed = 1.8; combo = 0; comboT = 0; targetSpeed = 0.4; angle = 0;
-            document.body.style.backgroundColor = bgColors[0];
-            document.body.classList.remove('shake');
-            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            isPlaying = true; level = 1; hits = 3; speed = 2.4; combo = 0; comboT = 0; angle = 0;
+            document.body.style.background = "#121212";
+            document.body.classList.remove('rainbow-active');
+            track.classList.remove('neon-aura');
+            closePanels();
             document.getElementById('ui-header').style.display = 'block';
             document.getElementById('game-box').style.display = 'block';
             document.getElementById('touch-layer').style.display = 'block';
-            spawnTarget(); updateUI(); updateM();
+            spawnTarget(); updateM();
+            hitsEl.innerText = hits;
+            comboEl.innerText = 'COMBO x0';
+            levelEl.innerText = 'BÖLÜM ' + level;
         }
 
         function spawnTarget() {
-            targetAngle = (angle + 110 + Math.random() * 140) % 360; // Fix 2: Hedef aralığını optimize et
+            targetAngle = (angle + 100 + Math.random() * 140) % 360;
             targetDir = Math.random() > 0.5 ? 1 : -1;
-            document.getElementById('t-cont').style.transform = `rotate(${targetAngle}deg)`;
+            tCont.style.transform = `rotate(${targetAngle}deg)`;
         }
 
-        function action(e) {
+        function action() {
             if(!isPlaying) return;
-            const touchX = e.touches ? e.touches[0].clientX : e.clientX;
-            const touchY = e.touches ? e.touches[0].clientY : e.clientY;
-            createClickFX(touchX, touchY);
-
             let pA = ((angle % 360) + 360) % 360;
             let tA = ((targetAngle % 360) + 360) % 360;
             let diff = Math.min(Math.abs(pA - tA), 360 - Math.abs(pA - tA));
 
             if(diff <= 35) {
-                vib(40); combo++; comboT = 3200;
-                if(combo % 5 === 0) showWord(words[Math.min(Math.floor(combo/5)-1, words.length-1)]);
-                if(combo % 3 === 0 && combo < 10) document.body.style.backgroundColor = bgColors[Math.floor(Math.random()*bgColors.length)];
-                if(combo === 10) { document.getElementById('ring-track').classList.add('neon-aura'); document.body.classList.add('rainbow-active'); }
-
+                combo++; comboT = COMBO_MAX;
+                if(combo % 5 === 0) {
+                    const w = document.createElement('div'); w.className = 'word-float';
+                    w.innerText = words[Math.min(Math.floor(combo/5)-1, words.length-1)];
+                    w.style.top = "30%"; document.body.appendChild(w);
+                    setTimeout(() => w.remove(), 600);
+                }
+                if(combo < 10 && combo % 3 === 0) document.body.style.backgroundColor = bgColors[Math.floor(Math.random()*bgColors.length)];
+                if(combo === 10) { track.classList.add('neon-aura'); document.body.classList.add('rainbow-active'); }
+                
                 money += (level * 10 * combo); hits--;
                 if(hits <= 0) { 
                     level++; 
+                    levelEl.innerText = 'BÖLÜM ' + level;
                     hits = Math.min(level + 2, 10); 
-                    speed = Math.min(speed + 0.15, 5); // Aşırı hızı limitle
-                    targetSpeed += 0.05; 
+                    speed += 0.2; 
+                    targetSpeed += 0.08; 
                 }
-                dir *= -1; spawnTarget(); updateUI(); updateM();
-            } else { isPlaying = false; triggerShatter(); }
+                dir *= -1; spawnTarget(); updateM();
+                hitsEl.innerText = hits;
+                comboEl.innerText = 'COMBO x' + combo;
+            } else {
+                isPlaying = false;
+                document.getElementById('final-lvl').innerText = 'Bölüm: ' + level;
+                document.getElementById('death').style.display = 'flex';
+                document.getElementById('game-box').style.display = 'none';
+            }
         }
 
-        const tl = document.getElementById('touch-layer');
-        tl.addEventListener('touchstart', (e) => { e.preventDefault(); action(e); }, {passive: false});
-        tl.addEventListener('mousedown', (e) => { if(!('ontouchstart' in window)) action(e); });
+        document.getElementById('touch-layer').addEventListener('mousedown', action);
+        document.getElementById('touch-layer').addEventListener('touchstart', (e) => { e.preventDefault(); action(); }, {passive:false});
 
-        function updateUI() {
-            document.getElementById('hits').innerText = hits;
-            document.getElementById('combo-count').innerText = 'COMBO x' + combo;
+        function closePanels() { document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); if(!isPlaying) document.getElementById('menu').style.display='flex'; }
+        
+        function openMarket() { 
+            const l = document.getElementById('market-list'); l.innerHTML = '';
+            skins.forEach(s => {
+                const div = document.createElement('div'); div.className = `list-item ${active === s.i ? 'active' : ''}`;
+                div.innerHTML = `<span>${s.i} Skin</span> <span>${owned.includes(s.i) ? 'ALINDI' : s.p + ' 💰'}</span>`;
+                div.onclick = () => { if(!owned.includes(s.i) && money >= s.p) { money -= s.p; owned.push(s.i); updateM(); openMarket(); } };
+                l.appendChild(div);
+            });
+            document.getElementById('market-panel').style.display = 'flex'; 
+        }
+
+        function openInventory() { 
+            const l = document.getElementById('inv-list'); l.innerHTML = '';
+            owned.forEach(s => {
+                const div = document.createElement('div'); div.className = `list-item ${active === s ? 'active' : ''}`;
+                div.innerHTML = `<span>${s} Karakteri</span> <span>${active === s ? 'SEÇİLİ' : 'SEÇ'}</span>`;
+                div.onclick = () => { active = s; updateM(); openInventory(); };
+                l.appendChild(div);
+            });
+            document.getElementById('inv-panel').style.display = 'flex'; 
         }
 
         function loop() {
             if(isPlaying) {
-                angle += speed * dir; 
-                document.getElementById('p-cont').style.transform = `rotate(${angle}deg)`;
-                targetAngle += targetSpeed * targetDir; 
-                document.getElementById('t-cont').style.transform = `rotate(${targetAngle}deg)`;
+                angle += speed * dir;
+                pCont.style.transform = `rotate(${angle}deg)`;
+                targetAngle += targetSpeed * targetDir;
+                tCont.style.transform = `rotate(${targetAngle}deg)`;
+                
                 if(comboT > 0) { 
                     comboT -= 16; 
-                    document.getElementById('combo-fill').style.transform = `scaleX(${comboT/3200})`; 
+                    comboFill.style.transform = `scaleX(${comboT/COMBO_MAX})`; 
                 } else if(combo > 0) { 
                     combo = 0; 
-                    document.getElementById('ring-track').classList.remove('neon-aura'); 
                     document.body.classList.remove('rainbow-active'); 
-                    document.body.style.backgroundColor = bgColors[0]; 
-                    updateUI(); 
+                    track.classList.remove('neon-aura'); 
+                    document.body.style.background = "#121212"; 
+                    comboEl.innerText = 'COMBO x0'; 
                 }
             }
             requestAnimationFrame(loop);
         }
-
-        function openMarket() {
-            const list = document.getElementById('market-list'); list.innerHTML = '';
-            skins.forEach(s => {
-                const item = document.createElement('div');
-                item.className = `market-item ${active === s.i ? 'active' : ''}`;
-                item.innerHTML = `<span style="font-size:2rem">${s.i}</span> <span>${owned.includes(s.i) ? 'ALINDI' : s.p + ' 💰'}</span>`;
-                item.onclick = (e) => { e.stopPropagation(); if(!owned.includes(s.i) && money >= s.p) { money -= s.p; owned.push(s.i); updateM(); openMarket(); } };
-                list.appendChild(item);
-            });
-            document.getElementById('market-panel').style.display = 'flex';
-        }
-
-        function openInventory() {
-            const list = document.getElementById('inv-list'); list.innerHTML = '';
-            owned.forEach(s => {
-                const item = document.createElement('div');
-                item.className = `market-item ${active === s ? 'active' : ''}`;
-                item.innerHTML = `<span style="font-size:2rem">${s}</span> <span>${active === s ? 'SEÇİLİ' : 'SEÇ'}</span>`;
-                item.onclick = (e) => { e.stopPropagation(); active = s; updateM(); openInventory(); };
-                list.appendChild(item);
-            });
-            document.getElementById('inv-panel').style.display = 'flex';
-        }
-
-        function closePanels() { 
-            document.querySelectorAll('.panel').forEach(p => { if(p.id !== 'menu') p.style.display = 'none'; }); 
-        }
-
         updateM(); loop();
     </script>
 </body>
